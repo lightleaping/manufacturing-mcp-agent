@@ -10,6 +10,8 @@ from app.mcp_server.tools import (
     summarize_line_performance,
 )
 
+from app.agent.prompts import build_answer_prompt
+
 
 def classify_intent(question: str) -> str:
     """
@@ -84,14 +86,27 @@ def call_tool(state: AgentState) -> AgentState:
 def build_answer(state: AgentState) -> AgentState:
     result = state["tool_result"]
     evidence = result.get("evidence", [])
+    summary = result.get("summary", "분석 결과를 생성하지 못했습니다.")
 
     if not evidence:
         state["answer"] = "현재 데이터에서는 질문에 답하기에 충분한 근거를 찾지 못했습니다."
         return state
 
-    state["answer"] = result.get("summary", "분석 결과를 생성하지 못했습니다.")
-    return state
+    # LangChain PromptTemplate을 사용해 답변 생성 정책을 구조화합니다.
+    # 현재 버전은 외부 LLM 호출 없이 Tool summary를 최종 답변으로 사용하고,
+    # prompt_text는 향후 LLM 연결 및 LangSmith trace 확장을 위해 생성합니다.
+    prompt_text = build_answer_prompt(
+        question=state["question"],
+        intent=state["intent"],
+        tool_name=state["tool_name"],
+        summary=summary,
+        evidence=evidence,
+    )
 
+    state["answer"] = summary
+    state["tool_result"]["prompt_text"] = prompt_text
+
+    return state
 
 def create_graph():
     workflow = StateGraph(AgentState)
