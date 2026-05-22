@@ -42,6 +42,8 @@ def classify_intent(question: str) -> str:
         return "machine_anomaly"
 
     return "line_performance"
+
+
 def route_question(state: AgentState) -> AgentState:
     intent = classify_intent(state["question"])
     state["intent"] = intent
