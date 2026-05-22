@@ -1,0 +1,6 @@
+services:
+  manufacturing-mcp-agent:
+    build: .
+    container_name: manufacturing-mcp-agent
+    ports:
+      - "8000:8000"
