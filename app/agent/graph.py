@@ -12,6 +12,8 @@ from app.mcp_server.tools import (
 
 from app.agent.prompts import build_answer_prompt
 
+from app.services.trace_logger import write_agent_trace
+
 
 def classify_intent(question: str) -> str:
     """
@@ -138,10 +140,20 @@ def run_agent(question: str) -> dict:
 
     final_state = _graph.invoke(initial_state)
 
+    evidence = final_state["evidence"]
+
+    write_agent_trace(
+        question=final_state["question"],
+        intent=final_state["intent"],
+        tool_name=final_state["tool_name"],
+        evidence_count=len(evidence),
+        status="success",
+    )
+
     return {
         "question": final_state["question"],
         "intent": final_state["intent"],
         "tool_name": final_state["tool_name"],
         "answer": final_state["answer"],
-        "evidence": final_state["evidence"],
+        "evidence": evidence,
     }
