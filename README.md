@@ -4,6 +4,8 @@
 
 사용자가 제조 현장 데이터에 대해 자연어로 질문하면, Agent가 질문 유형을 판단하고 필요한 MCP Tool을 호출하여 생산 로그, 품질 검사, 설비 센서 데이터를 분석한 뒤 근거 기반 답변을 반환합니다.
 
+이 프로젝트는 인터엑스 AI Agent Engineer 포지션의 요구 기술인 MCP, LangGraph, LangChain, LangFlow, FastAPI, SQL/DB, PyTorch, Docker, CI/CD, Agent trace logging을 포트폴리오 프로젝트 안에서 최대한 반영하기 위해 진행했습니다.
+
 ---
 
 ## 1. 프로젝트 개요
@@ -12,7 +14,22 @@
 
 단순히 질문에 답하는 챗봇이 아니라, 사용자의 질문을 분석한 뒤 필요한 Tool을 선택하고, 실제 데이터 분석 결과를 근거로 답변을 생성하는 구조를 목표로 했습니다.
 
-인터엑스 AI Agent Engineer 포지션에서 요구하는 MCP Server, AI Agent Workflow, 제조 데이터 연동, Data Pipeline, FastAPI, Docker, CI/CD 경험을 포트폴리오 프로젝트로 보완하기 위해 진행했습니다.
+구현 범위는 다음과 같습니다.
+
+- 제조 샘플 데이터 생성
+- CSV 기반 데이터 분석
+- SQLite DB 적재 및 SQL 조회
+- MCP Tool 구조
+- MCP Server entrypoint
+- LangGraph Agent Workflow
+- LangChain PromptTemplate 기반 답변 정책
+- FastAPI Agent API
+- PyTorch SensorAutoEncoder 모델 서빙
+- Agent trace logging
+- Docker 실행 환경
+- pytest 자동 테스트
+- GitHub Actions CI
+- LangFlow 스타일 Workflow 설계 문서 및 flow JSON
 
 ---
 
@@ -79,6 +96,37 @@ LINE_C에서 평균 불량률, 최대 온도, 최대 진동이 함께 높게 관
 단, 이 결과는 샘플 데이터 기반의 규칙 분석이므로 실제 원인 확정에는 추가 현장 데이터가 필요합니다.
 ```
 
+### 2-5. PyTorch 센서 이상탐지 모델 서빙
+
+FastAPI의 `/model/sensor-anomaly` endpoint를 통해 센서 입력값에 대한 anomaly score를 반환합니다.
+
+요청 예시:
+
+```json
+{
+  "temperature": 95.7,
+  "vibration": 5.6,
+  "pressure": 2.4
+}
+```
+
+응답 예시:
+
+```json
+{
+  "temperature": 95.7,
+  "vibration": 5.6,
+  "pressure": 2.4,
+  "anomaly_score": 2573.63623046875,
+  "threshold": 1000,
+  "is_anomaly": true,
+  "model": "SensorAutoEncoder",
+  "note": "현재 모델은 포트폴리오용 기본 AutoEncoder 구조입니다. 실제 운영에서는 정상 센서 데이터로 학습한 weight와 검증 기반 threshold가 필요합니다."
+}
+```
+
+현재 모델은 포트폴리오용 기본 AutoEncoder 구조입니다. 실제 운영에서는 정상 센서 데이터 기반 학습 weight와 검증 기반 threshold 산정이 필요합니다.
+
 ---
 
 ## 3. 기술 스택
@@ -88,11 +136,16 @@ LINE_C에서 평균 불량률, 최대 온도, 최대 진동이 함께 높게 관
 | Language | Python |
 | API Server | FastAPI, Uvicorn |
 | Agent Workflow | LangGraph |
+| Prompt Policy | LangChain PromptTemplate |
 | Tool Interface | MCP, FastMCP |
+| Visual Workflow Design | LangFlow-style Flow JSON |
 | Data Processing | pandas |
+| DB / SQL | SQLite, SQL schema, CSV-to-DB pipeline |
+| Model Serving | PyTorch SensorAutoEncoder, FastAPI model endpoint |
+| Observability | Agent trace logging, JSONL |
 | Test | pytest |
 | Container | Docker, Docker Compose |
-| CI | GitHub Actions |
+| CI/CD | GitHub Actions |
 
 ---
 
@@ -114,6 +167,20 @@ Manufacturing Data Analysis
 Evidence-based Answer
 ```
 
+모델 서빙 구조는 별도 endpoint로 구성했습니다.
+
+```text
+Sensor Input
+  ↓
+FastAPI /model/sensor-anomaly
+  ↓
+PyTorch SensorAutoEncoder
+  ↓
+Anomaly Score
+  ↓
+Prediction Result
+```
+
 ---
 
 ## 5. 데이터 구성
@@ -131,6 +198,24 @@ Evidence-based Answer
 ```bash
 python scripts_generate_sample_data.py
 ```
+
+### SQLite DB Pipeline
+
+샘플 CSV 데이터는 SQLite DB로 적재할 수 있도록 구성했습니다.
+
+```bash
+python -m app.db.init_db
+```
+
+DB 테이블:
+
+| 테이블 | 설명 |
+|---|---|
+| production_logs | 생산 로그 |
+| quality_inspection | 품질 검사 로그 |
+| machine_sensor_logs | 설비 센서 로그 |
+
+이를 통해 CSV 기반 분석뿐 아니라 SQL 기반 데이터 조회 구조도 함께 구성했습니다.
 
 ---
 
@@ -163,6 +248,20 @@ route_question
 
 Tool 결과의 summary와 evidence를 기반으로 최종 응답을 구성합니다.
 
+### LangChain Prompt Policy
+
+`app/agent/prompts.py`에서 LangChain `PromptTemplate`을 사용해 grounded answer 정책을 분리했습니다.
+
+답변 정책:
+
+- Tool 결과에 포함된 evidence를 근거로만 답변
+- evidence에 없는 수치나 원인 추측 금지
+- 품질 이상 원인은 확정하지 않고 원인 후보 또는 우선 점검 대상으로 표현
+- 데이터가 부족하면 추가 데이터 필요성을 명시
+- 핵심 지표와 근거를 함께 포함
+
+현재 버전은 외부 LLM API를 호출하지 않고 Tool summary를 최종 답변으로 사용합니다. 다만 PromptTemplate으로 답변 정책과 입력 정보를 구조화해, 향후 LLM 모델 또는 LangSmith trace 연동이 가능하도록 설계했습니다.
+
 ---
 
 ## 7. MCP Server 구성
@@ -187,9 +286,58 @@ MCP Server는 stdio 기반 MCP Client 연결을 전제로 실행됩니다.
 
 ---
 
-## 8. FastAPI 실행 방법
+## 8. LangFlow Design
 
-### 8-1. 가상환경 생성
+실제 Agent 실행은 LangGraph로 구현했으며, 동일한 Workflow를 LangFlow 스타일의 flow JSON과 설계 문서로 정리했습니다.
+
+| 파일 | 설명 |
+|---|---|
+| docs/langflow_design.md | LangFlow 스타일 설계 문서 |
+| langflow/manufacturing_agent_flow.json | Agent workflow flow JSON |
+
+흐름:
+
+```text
+Chat Input
+→ Intent Router
+→ MCP Tool Selector
+→ MCP Tool
+→ Evidence Formatter
+→ Chat Output
+```
+
+이 구조는 LangGraph의 `route_question → call_tool → build_answer` 흐름을 시각화 가능한 형태로 표현한 것입니다.
+
+---
+
+## 9. Agent Trace Logging
+
+Agent 실행 시 아래 정보를 JSONL 로그로 저장합니다.
+
+| 필드 | 설명 |
+|---|---|
+| created_at | 실행 시각 |
+| question | 사용자 질문 |
+| intent | 분류된 질문 의도 |
+| tool_name | 호출된 Tool |
+| evidence_count | 반환된 근거 개수 |
+| status | 실행 상태 |
+
+로그 파일:
+
+```text
+logs/agent_trace.jsonl
+```
+
+로그 파일은 실행 중 생성되며 Git에는 포함하지 않습니다.
+
+이 구조는 향후 LangSmith, OpenTelemetry, LLMOps Dashboard로 확장 가능한 최소 trace 구조입니다.
+
+---
+
+## 10. FastAPI 실행 방법
+
+### 10-1. 가상환경 생성
 
 ```bash
 python -m venv .venv
@@ -201,19 +349,25 @@ Windows PowerShell:
 .venv\Scripts\Activate.ps1
 ```
 
-### 8-2. 패키지 설치
+### 10-2. 패키지 설치
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 8-3. 샘플 데이터 생성
+### 10-3. 샘플 데이터 생성
 
 ```bash
 python scripts_generate_sample_data.py
 ```
 
-### 8-4. 서버 실행
+### 10-4. SQLite DB 초기화
+
+```bash
+python -m app.db.init_db
+```
+
+### 10-5. 서버 실행
 
 ```bash
 uvicorn app.main:app --reload
@@ -227,7 +381,9 @@ http://127.0.0.1:8000/docs
 
 ---
 
-## 9. API 사용 예시
+## 11. API 사용 예시
+
+### 11-1. Agent Query API
 
 Endpoint:
 
@@ -264,9 +420,42 @@ Response:
 }
 ```
 
+### 11-2. PyTorch Model Serving API
+
+Endpoint:
+
+```text
+POST /model/sensor-anomaly
+```
+
+Request:
+
+```json
+{
+  "temperature": 95.7,
+  "vibration": 5.6,
+  "pressure": 2.4
+}
+```
+
+Response:
+
+```json
+{
+  "temperature": 95.7,
+  "vibration": 5.6,
+  "pressure": 2.4,
+  "anomaly_score": 2573.63623046875,
+  "threshold": 1000,
+  "is_anomaly": true,
+  "model": "SensorAutoEncoder",
+  "note": "현재 모델은 포트폴리오용 기본 AutoEncoder 구조입니다. 실제 운영에서는 정상 센서 데이터로 학습한 weight와 검증 기반 threshold가 필요합니다."
+}
+```
+
 ---
 
-## 10. Docker 실행
+## 12. Docker 실행
 
 Docker Desktop 실행 후 아래 명령어를 사용합니다.
 
@@ -288,7 +477,7 @@ docker compose down
 
 ---
 
-## 11. 테스트
+## 13. 테스트
 
 ```bash
 pytest
@@ -307,51 +496,84 @@ python -m pytest
 - 라인별 생산성 요약 Tool 테스트
 - 품질 이상 원인 후보 Tool 테스트
 - Agent intent routing 테스트
+- PyTorch SensorAutoEncoder 모델 서빙 테스트
 
 테스트 결과:
 
 ```text
-8 passed
+9 passed
 ```
 
 ---
 
-## 12. 문제 해결 및 개선 과정
+## 14. CI/CD
 
-### 12-1. Agent 라우팅 우선순위 개선
+GitHub Actions를 통해 push 또는 pull request 시 자동 테스트를 실행하도록 구성했습니다.
+
+Workflow 파일:
+
+```text
+.github/workflows/ci.yml
+```
+
+CI 단계:
+
+```text
+Checkout repository
+→ Set up Python
+→ Install dependencies
+→ Generate sample manufacturing data
+→ Initialize SQLite database
+→ Run tests
+```
+
+---
+
+## 15. 문제 해결 및 개선 과정
+
+### 15-1. Agent 라우팅 우선순위 개선
 
 초기 Agent 라우팅 규칙에서는 `품질 이상 원인 후보` 질문이 `이상` 키워드 때문에 설비 이상 탐지 Tool로 잘못 연결되는 문제가 있었습니다.
 
 이를 해결하기 위해 `원인`, `후보`, `왜`와 같은 목적 단어가 있을 때만 품질 이상 원인 후보 Tool로 라우팅되도록 규칙 우선순위를 조정했습니다.
 
-### 12-2. Docker requirements 최소화
+### 15-2. Docker requirements 최소화
 
 초기 `requirements.txt`는 로컬 Windows 가상환경 전체를 freeze한 결과라 Docker Linux 환경에서 `pywin32` 설치 오류가 발생했습니다.
 
 이를 해결하기 위해 실제 서비스 실행에 필요한 패키지만 남기고 requirements를 최소화했습니다.
 
+### 15-3. Docker Engine 및 빌드 이슈 해결
+
+Docker Desktop이 실행되지 않은 상태에서는 Docker daemon 연결 오류가 발생했습니다.  
+Docker Desktop 실행 후 Docker Engine 연결을 확인하고, `docker compose up --build`로 이미지 빌드와 컨테이너 실행을 검증했습니다.
+
 ---
 
-## 13. 한계와 개선 방향
+## 16. 한계와 개선 방향
 
 현재 프로젝트는 포트폴리오용 미니 프로젝트이므로 실제 제조 현장 데이터가 아닌 샘플 데이터를 사용합니다.
 
+또한 PyTorch 모델은 실제 학습 weight를 사용하지 않는 기본 AutoEncoder 구조이며, 운영 환경에서는 정상 센서 데이터 기반 학습과 검증 기반 threshold 산정이 필요합니다.
+
 향후 개선 방향은 다음과 같습니다.
 
-- PostgreSQL 연동
-- Redis 기반 캐싱
-- Kafka 기반 실시간 센서 스트리밍
-- LangSmith 등 LLMOps 관측 도구 연동
-- A2A 구조로 품질 Agent와 설비 Agent 분리
-- 시계열 이상 탐지 모델 적용
-- 실제 MCP Client와의 연동 강화
+- PostgreSQL 기반 운영 DB 전환
+- Redis 기반 자주 조회되는 라인별 지표 캐싱
+- Kafka 기반 실시간 센서 데이터 스트리밍
+- LangSmith 기반 Agent trace 및 tool call 관측
+- A2A 구조로 품질 Agent, 설비 Agent, 생산 Agent 분리
+- PyTorch 기반 시계열 이상탐지 모델 학습 및 weight 서빙
+- LangFlow UI에서 실제 flow 시각화
+- 실제 MCP Client와 연동해 외부 도구 호출 구조 강화
+- Cloud Run, AWS ECS 등 컨테이너 배포 환경 적용
 
 ---
 
-## 14. 포트폴리오 요약
+## 17. 포트폴리오 요약
 
 이 프로젝트에서는 제조 데이터를 대상으로 MCP Tool과 LangGraph 기반 Agent Workflow를 구성했습니다.
 
 사용자의 자연어 질문을 intent로 분류하고, 필요한 Tool을 호출하여 생산 로그, 품질 검사, 설비 센서 데이터를 분석한 뒤 answer와 evidence를 함께 반환하도록 구현했습니다.
 
-FastAPI, Docker, pytest, GitHub Actions를 함께 구성하여 단순 데모가 아니라 실행·검증·배포 흐름을 갖춘 AI Agent 백엔드 프로젝트로 정리했습니다.
+또한 SQLite 기반 DB Pipeline, LangChain PromptTemplate 기반 답변 정책, PyTorch SensorAutoEncoder 모델 서빙, Agent trace logging, Docker 실행 환경, GitHub Actions CI, LangFlow-style flow 설계 문서를 추가하여 단순 데모가 아니라 실행·검증·관측·확장 흐름을 갖춘 AI Agent 백엔드 프로젝트로 정리했습니다.
