@@ -32,6 +32,9 @@ def find_sensor_anomalies(days: int = 7) -> dict:
 
     anomalies["reason"] = anomalies.apply(_build_reason, axis=1)
 
+    # FastAPI JSON 응답에서 pandas Timestamp가 깨지지 않도록 문자열로 변환
+    anomalies["timestamp"] = anomalies["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
     evidence = (
         anomalies.sort_values("timestamp")
         .head(10)
