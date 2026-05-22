@@ -15,22 +15,33 @@ def classify_intent(question: str) -> str:
     """
     사용자 질문을 간단한 규칙으로 분류합니다.
     실제 서비스에서는 LLM 기반 intent classification으로 확장할 수 있습니다.
+
+    분류 우선순위:
+    1. 품질 이상 원인 후보
+    2. 불량률 분석
+    3. 설비 센서 이상 탐지
+    4. 라인별 생산성 요약
     """
     q = question.lower()
 
-    if any(keyword in q for keyword in ["불량", "defect", "불량률"]):
-        if any(keyword in q for keyword in ["원인", "후보", "왜"]):
+    # 1. 품질 이상 원인 후보 질문은 '이상'보다 '원인/후보/품질'을 우선 판단
+    if any(keyword in q for keyword in ["원인", "후보", "왜", "품질"]):
+        if any(keyword in q for keyword in ["불량", "품질", "이상", "defect"]):
             return "quality_issue_candidates"
+
+    # 2. 불량률 분석
+    if any(keyword in q for keyword in ["불량", "defect", "불량률"]):
         return "defect_rate"
 
-    if any(keyword in q for keyword in ["온도", "진동", "압력", "센서", "이상", "anomaly"]):
+    # 3. 설비 센서 이상 탐지
+    if any(keyword in q for keyword in ["온도", "진동", "압력", "센서", "anomaly"]):
         return "machine_anomaly"
 
+    # 4. 라인별 생산성 요약
     if any(keyword in q for keyword in ["생산성", "생산량", "라인별", "요약", "performance"]):
         return "line_performance"
 
     return "line_performance"
-
 
 def route_question(state: AgentState) -> AgentState:
     intent = classify_intent(state["question"])
