@@ -1,0 +1,111 @@
+{
+  "name": "Manufacturing MCP Agent Flow",
+  "description": "LangFlow-style design for a manufacturing AI Agent that routes user questions to MCP tools and returns evidence-based answers.",
+  "version": "0.1.0",
+  "nodes": [
+    {
+      "id": "chat_input",
+      "type": "ChatInput",
+      "label": "User Question",
+      "description": "Receives a natural language question about manufacturing data."
+    },
+    {
+      "id": "intent_router",
+      "type": "Router",
+      "label": "Intent Router",
+      "description": "Classifies the user question into defect_rate, machine_anomaly, line_performance, or quality_issue_candidates."
+    },
+    {
+      "id": "mcp_tool_selector",
+      "type": "ToolSelector",
+      "label": "MCP Tool Selector",
+      "description": "Selects the proper MCP tool based on the classified intent."
+    },
+    {
+      "id": "defect_rate_tool",
+      "type": "MCPTool",
+      "label": "defect_rate_by_line",
+      "description": "Calculates defect rate by production line."
+    },
+    {
+      "id": "machine_anomaly_tool",
+      "type": "MCPTool",
+      "label": "machine_anomalies",
+      "description": "Detects abnormal temperature, vibration, or pressure values."
+    },
+    {
+      "id": "line_performance_tool",
+      "type": "MCPTool",
+      "label": "line_performance",
+      "description": "Summarizes productivity and quality status by line."
+    },
+    {
+      "id": "quality_candidate_tool",
+      "type": "MCPTool",
+      "label": "quality_issue_candidates",
+      "description": "Infers candidate quality issue causes using defect and sensor data."
+    },
+    {
+      "id": "evidence_formatter",
+      "type": "PromptTemplate",
+      "label": "Evidence Formatter",
+      "description": "Formats tool result summary and evidence according to grounded answer policy."
+    },
+    {
+      "id": "chat_output",
+      "type": "ChatOutput",
+      "label": "Answer Output",
+      "description": "Returns answer, intent, tool_name, and evidence to the user."
+    }
+  ],
+  "edges": [
+    {
+      "source": "chat_input",
+      "target": "intent_router"
+    },
+    {
+      "source": "intent_router",
+      "target": "mcp_tool_selector"
+    },
+    {
+      "source": "mcp_tool_selector",
+      "target": "defect_rate_tool",
+      "condition": "intent == defect_rate"
+    },
+    {
+      "source": "mcp_tool_selector",
+      "target": "machine_anomaly_tool",
+      "condition": "intent == machine_anomaly"
+    },
+    {
+      "source": "mcp_tool_selector",
+      "target": "line_performance_tool",
+      "condition": "intent == line_performance"
+    },
+    {
+      "source": "mcp_tool_selector",
+      "target": "quality_candidate_tool",
+      "condition": "intent == quality_issue_candidates"
+    },
+    {
+      "source": "defect_rate_tool",
+      "target": "evidence_formatter"
+    },
+    {
+      "source": "machine_anomaly_tool",
+      "target": "evidence_formatter"
+    },
+    {
+      "source": "line_performance_tool",
+      "target": "evidence_formatter"
+    },
+    {
+      "source": "quality_candidate_tool",
+      "target": "evidence_formatter"
+    },
+    {
+      "source": "evidence_formatter",
+      "target": "chat_output"
+    }
+  ]
+}
