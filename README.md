@@ -1,494 +1,404 @@
 # Manufacturing MCP Agent
 
-MCP Tool 구조, LangGraph Workflow, FastAPI, SQLite, PyTorch 기반 제조 데이터 탐색·진단 AI Agent 백엔드 프로젝트입니다.
+제조 현장의 생산 로그, 품질 검사 로그, 설비 센서 로그를 기반으로 자연어 질의를 처리하는 FastAPI 기반 제조 분석 Agent 프로젝트입니다. 사용자의 입력은 LangGraph workflow를 통해 intent로 분류되고, intent에 맞는 MCP-style Tool 함수가 실행됩니다. 각 Tool은 분석 결과 `summary`와 근거 데이터 `evidence`를 반환합니다.
 
-사용자가 제조 데이터에 대해 자연어로 질문하면, Agent가 질문 의도를 분류하고 필요한 Tool을 선택해 생산 로그, 품질 검사, 설비 센서 데이터를 분석한 뒤 `answer`와 `evidence`를 함께 반환합니다.
+## 1. 프로젝트 개요
 
-단순 챗봇처럼 답변만 생성하는 구조가 아니라, 다음 흐름을 중심으로 구성했습니다.
+이 프로젝트는 제조 데이터 분석 흐름을 Agent 구조로 구성한 백엔드입니다. 단순히 하나의 분석 함수를 호출하는 구조가 아니라, 입력 문장을 분류하고, 해당 의도에 맞는 Tool을 선택하고, Tool 결과를 근거 기반 응답으로 정리하는 흐름을 갖습니다.
 
-```text
-질문 입력
-→ intent 분류
-→ MCP Tool 선택
-→ 제조 데이터 분석
-→ evidence 정리
-→ grounded answer 생성
-→ FastAPI JSON 응답
-→ trace log 저장
-```
-
----
-
-## 1. Overview
-
-이 프로젝트는 제조 현장의 생산 로그, 품질 검사, 설비 센서 데이터를 기반으로 사용자의 질문에 필요한 분석 Tool을 호출하는 AI Agent 백엔드 시스템입니다.
-
-주요 목표는 다음과 같습니다.
-
-- 제조 데이터 질문을 intent로 분류
-- intent에 따라 적절한 MCP Tool 선택
-- SQLite 기반 제조 샘플 데이터 조회
-- 생산성, 불량률, 설비 이상, 품질 원인 후보 분석
-- PyTorch SensorAutoEncoder 기반 센서 이상탐지 endpoint 제공
-- FastAPI Swagger에서 API 응답 확인
-- pytest, Docker, GitHub Actions 기반 실행·검증 흐름 구성
-
----
-
-## 2. Why I Built This
-
-제조 현장 데이터는 생산 로그, 품질 검사, 설비 센서처럼 여러 형태로 나뉘어 있습니다.
-
-일반적인 챗봇 방식은 사용자의 질문에 바로 답변을 생성할 수 있지만, 실제 데이터 기반 시스템에서는 다음 질문을 함께 해결해야 합니다.
-
-- 어떤 데이터를 조회해야 하는가?
-- 어떤 분석 Tool을 호출해야 하는가?
-- 어떤 근거를 사용해 답변했는가?
-- 답변이 실제 데이터에 기반하고 있는가?
-- 모델 추론 결과를 API로 어떻게 제공할 것인가?
-
-이 프로젝트는 이러한 문제를 해결하기 위해 질문을 바로 답변하지 않고, `intent routing → Tool calling → evidence formatting → answer generation` 구조로 설계했습니다.
-
----
-
-## 3. Key Features
-
-- 제조 샘플 데이터 생성
-- SQLite DB schema 및 CSV-to-DB pipeline 구성
-- 생산 로그, 품질 검사, 설비 센서 데이터 관리
-- 질문 intent 분류
-- MCP Tool 구조 기반 분석 기능 분리
-- LangGraph 기반 Agent workflow 구성
-- LangChain PromptTemplate 기반 grounded answer 정책 분리
-- FastAPI `/agent/query` endpoint 제공
-- PyTorch SensorAutoEncoder 기반 `/model/sensor-anomaly` endpoint 제공
-- Agent trace logging JSONL 저장
-- pytest 기반 기능 테스트
-- Docker / Docker Compose 실행 환경 구성
-- GitHub Actions CI 기초 구성
-
----
-
-## 4. Project Structure
+핵심 흐름은 다음과 같습니다.
 
 ```text
-manufacturing-mcp-agent/
-├─ app/
-│  ├─ agent/              # LangGraph Agent workflow
-│  ├─ db/                 # SQLite DB 연결 및 데이터 조회
-│  ├─ mcp_server/         # MCP Tool / Tool server 구조
-│  ├─ models/             # PyTorch SensorAutoEncoder 모델
-│  ├─ services/           # 서비스 로직
-│  ├─ config.py           # 설정값
-│  ├─ main.py             # FastAPI 실행 진입점
-│  └─ __init__.py
-├─ data/                  # 제조 샘플 데이터 및 DB
-├─ docs/                  # 설계 문서
-├─ langflow/              # LangFlow 설계 자료
-├─ logs/                  # Agent trace log
-├─ tests/                 # pytest 테스트 코드
-├─ .github/               # GitHub Actions workflow
-├─ Dockerfile
-├─ docker-compose.yml
-├─ pytest.ini
-├─ requirements.txt
-├─ scripts_generate_sample_data.py
-└─ README.md
-```
-
----
-
-## 5. Architecture
-
-### Agent Query Flow
-
-```text
-사용자 질문 입력
+사용자 입력
 → FastAPI /agent/query
-→ LangGraph route_question
-→ intent 분류
-→ MCP Tool 선택
-→ 제조 데이터 분석
-→ answer / evidence 반환
-→ trace log 저장
+→ run_agent()
+→ LangGraph workflow
+→ route_question()
+→ call_tool()
+→ MCP-style Tool 함수
+→ summary / evidence
+→ build_answer()
+→ API 응답
 ```
 
-### Model Serving Flow
+별도로 `/model/sensor-anomaly` endpoint는 `temperature`, `vibration`, `pressure` 값을 직접 입력받아 PyTorch AutoEncoder 기반 `anomaly_score`와 `is_anomaly`를 반환합니다. 이 모델 endpoint는 현재 Agent Tool 흐름과 분리되어 있습니다.
 
-```text
-센서 입력값 수신
-→ FastAPI /model/sensor-anomaly
-→ PyTorch SensorAutoEncoder
-→ anomaly_score 계산
-→ threshold 비교
-→ is_anomaly 반환
-```
+## 2. 주요 기능
 
-### Layer Structure
+- 라인별 불량률 분석
+- 설비 센서 이상 구간 탐지
+- 라인별 생산성 및 품질 상태 요약
+- 불량률과 센서 지표 기반 품질 이상 원인 후보 추론
+- PyTorch AutoEncoder 기반 센서 anomaly score 계산 endpoint
+- pytest 기반 Agent flow, Tool, 모델 service 검증
+- Docker 기반 실행 환경 구성
+- GitHub Actions CI 기반 자동 테스트
 
-```text
-API Layer
-→ Agent Workflow Layer
-→ MCP Tool Layer
-→ Data Pipeline Layer
-→ Model Serving Layer
-→ Logging / Test Layer
-```
+## 3. 기술 스택
 
-각 계층을 분리해 질문 분류, Tool 호출, 데이터 분석, 답변 생성, 모델 추론을 독립적으로 확인하고 개선할 수 있도록 구성했습니다.
+| 구분 | 사용 기술 | 역할 |
+|---|---|---|
+| API | FastAPI, Pydantic | endpoint 정의, 요청/응답 schema 검증 |
+| Agent Workflow | LangGraph | route_question → call_tool → build_answer 흐름 구성 |
+| Tool Layer | Python functions, FastMCP 확장 기반 | Agent가 호출할 수 있는 제조 분석 기능 단위 |
+| Data Processing | pandas | CSV 로딩, 병합, 집계, 최근 N일 필터링 |
+| Model Serving | PyTorch | SensorAutoEncoder 기반 reconstruction error 계산 |
+| Test | pytest | Agent, Tool, 모델 service 검증 |
+| Infra | Docker, GitHub Actions | 실행 환경 재현, 자동 테스트 |
+| Storage 준비 | SQLite | schema, CSV 적재, 조회 helper 준비 |
 
----
+## 4. API Endpoints
 
-## 6. Tech Stack
+### POST `/agent/query`
 
-- Python
-- FastAPI
-- SQLite
-- SQL
-- pandas
-- PyTorch
-- LangGraph
-- LangChain PromptTemplate
-- Docker
-- Docker Compose
-- pytest
-- GitHub Actions
+제조 데이터 관련 자연어 입력을 받아 Agent workflow를 실행합니다.
 
----
-
-## 7. MCP Tool Design
-
-Agent가 모든 분석 로직을 직접 처리하지 않도록, 제조 데이터 분석 기능을 Tool 단위로 분리했습니다.
-
-| Tool | Role |
-|---|---|
-| `defect_rate_by_line` | 라인별 불량률 계산 |
-| `machine_anomalies` | 설비 센서 이상 탐지 |
-| `summarize_line_performance` | 라인별 생산성 및 품질 요약 |
-| `quality_issue_candidates` | 품질 이상 원인 후보 추정 |
-
-질문 intent에 따라 필요한 Tool을 선택하고, Tool 결과는 `answer`와 `evidence` 형식으로 정리됩니다.
-
----
-
-## 8. Agent Workflow
-
-LangGraph 기반 workflow는 다음 단계를 중심으로 구성했습니다.
-
-```text
-route_question
-→ call_tool
-→ build_answer
-```
-
-- `route_question`: 사용자 질문을 intent로 분류
-- `call_tool`: intent에 맞는 MCP Tool 호출
-- `build_answer`: Tool 결과를 기반으로 grounded answer 생성
-
-이 구조를 통해 Agent가 어떤 단계를 거쳐 결과를 생성했는지 추적할 수 있습니다.
-
----
-
-## 9. API Endpoints
-
-### `/agent/query`
-
-제조 데이터 관련 자연어 질문을 입력받아 intent, tool_name, answer, evidence를 반환합니다.
-
-```text
-POST /agent/query
-```
-
-### `/model/sensor-anomaly`
-
-센서 입력값을 받아 PyTorch SensorAutoEncoder 기반 anomaly_score를 반환합니다.
-
-```text
-POST /model/sensor-anomaly
-```
-
----
-
-## 10. How to Run
-
-### 1) Create and activate virtual environment
-
-Windows PowerShell 기준:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\activate
-```
-
-### 2) Install dependencies
-
-```powershell
-pip install -r requirements.txt
-```
-
-### 3) Run tests
-
-```powershell
-pytest -v
-```
-
-실행 확인 결과:
-
-```text
-collected 9 items
-9 passed in 11.13s
-```
-
-### 4) Run FastAPI server
-
-```powershell
-uvicorn app.main:app --reload
-```
-
-실행 후 Swagger UI에서 API를 확인할 수 있습니다.
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-## 11. Verified Execution
-
-로컬 Windows PowerShell 환경에서 다음 항목을 확인했습니다.
-
-```text
-1. GitHub 원격 저장소와 로컬 코드 동기화 확인
-2. 프로젝트 파일 구조 확인
-3. pytest -v 실행
-4. 9개 테스트 전체 통과
-5. FastAPI 서버 실행
-6. Swagger UI에서 /agent/query 응답 확인
-7. Swagger UI에서 /model/sensor-anomaly 응답 확인
-```
-
-### Test Result
-
-```text
-platform win32 -- Python 3.11.9
-collected 9 items
-
-tests/test_agent_flow.py::test_agent_routes_defect_question PASSED
-tests/test_agent_flow.py::test_agent_routes_anomaly_question PASSED
-tests/test_agent_flow.py::test_agent_routes_performance_question PASSED
-tests/test_agent_flow.py::test_agent_routes_quality_candidate_question PASSED
-tests/test_tools.py::test_defect_rate_tool_returns_evidence PASSED
-tests/test_tools.py::test_anomaly_tool_returns_summary PASSED
-tests/test_tools.py::test_performance_tool_returns_evidence PASSED
-tests/test_tools.py::test_quality_issue_candidates_returns_line_c PASSED
-tests/test_torch_model.py::test_predict_sensor_anomaly_returns_score PASSED
-
-9 passed in 11.13s
-```
-
----
-
-## 12. API Example - Agent Query
-
-### Request
+Request:
 
 ```json
 {
-  "question": "라인별 불량률을 알려줘"
+  "question": "최근 7일간 불량률이 가장 높은 라인을 찾아줘."
 }
 ```
 
-### Response
+Response:
 
 ```json
 {
-  "question": "라인별 불량률을 알려줘",
-  "intent": "line_performance",
-  "tool_name": "summarize_line_performance",
-  "answer": "최근 7일 기준 생산성이 가장 높은 라인은 LINE_D이며, 평균 시간당 생산량은 146.1개입니다. 품질 측면에서는 LINE_C의 평균 불량률이 4.39%로 가장 높습니다.",
+  "question": "최근 7일간 불량률이 가장 높은 라인을 찾아줘.",
+  "intent": "defect_rate",
+  "tool_name": "get_defect_rate_by_line",
+  "answer": "최근 7일 기준 불량률이 가장 높은 라인은 LINE_C입니다...",
   "evidence": [
     {
-      "line_id": "LINE_D",
-      "output_qty": 7874,
-      "operating_hours": 54.07,
-      "defect_qty": 128,
-      "avg_defect_rate": 0.016108740174909774,
-      "avg_productivity": 146.08852263069417
-    },
-    {
       "line_id": "LINE_C",
-      "output_qty": 7677,
-      "operating_hours": 56.3,
-      "defect_qty": 340,
-      "avg_defect_rate": 0.04394263227427786,
-      "avg_productivity": 136.6009404825025
-    },
-    {
-      "line_id": "LINE_B",
-      "output_qty": 7291,
-      "operating_hours": 57.35,
-      "defect_qty": 223,
-      "avg_defect_rate": 0.030711468800569932,
-      "avg_productivity": 127.21543371901414
-    },
-    {
-      "line_id": "LINE_A",
-      "output_qty": 5939,
-      "operating_hours": 55.55,
-      "defect_qty": 123,
-      "avg_defect_rate": 0.02058405764997165,
-      "avg_productivity": 107.22742343544272
+      "output_qty": 1234,
+      "defect_qty": 54,
+      "avg_defect_rate": 0.0439
     }
   ]
 }
 ```
 
-이 질문은 라인별 불량률을 묻지만, 라인별 생산성과 품질 지표를 함께 요약하는 `line_performance` intent로 라우팅됩니다.  
-응답에는 평균 불량률과 평균 생산성이 함께 포함되어 라인별 운영 상태를 함께 확인할 수 있습니다.
+### POST `/model/sensor-anomaly`
 
----
+센서값 3개를 직접 입력받아 AutoEncoder 기반 anomaly score를 계산합니다.
 
-## 13. API Example - Sensor Anomaly Model
-
-### Request
+Request:
 
 ```json
 {
-  "temperature": 25,
-  "vibration": 0.3,
-  "pressure": 101,
-  "humidity": 45
+  "temperature": 95.7,
+  "vibration": 5.6,
+  "pressure": 2.4
 }
 ```
 
-### Response
+Response:
 
 ```json
 {
-  "temperature": 25,
-  "vibration": 0.3,
-  "pressure": 101,
-  "anomaly_score": 2680.360595703125,
-  "threshold": 1000,
+  "temperature": 95.7,
+  "vibration": 5.6,
+  "pressure": 2.4,
+  "anomaly_score": 1023.5,
+  "threshold": 1000.0,
   "is_anomaly": true,
   "model": "SensorAutoEncoder",
-  "note": "현재 모델은 포트폴리오용 기본 AutoEncoder 구조입니다. 실제 운영에서는 정상 센서 데이터로 학습한 weight와 검증 기반 threshold가 필요합니다."
+  "note": "현재 모델은 포트폴리오용 기본 AutoEncoder 구조입니다..."
 }
 ```
 
-현재 endpoint는 temperature, vibration, pressure, humidity를 입력으로 받으며, 응답은 주요 센서값과 anomaly_score, threshold, is_anomaly를 중심으로 반환합니다.
+## 5. Agent Workflow
 
----
+Agent workflow는 `route_question`, `call_tool`, `build_answer` 세 node로 구성됩니다.
 
-## 14. My Role
+```text
+route_question
+→ 입력 문장을 intent로 분류하고 tool_name 결정
 
-- 제조 샘플 데이터 구조 설계
-- 생산 로그, 품질 검사, 설비 센서 샘플 데이터 생성
-- SQLite DB schema 구성
-- CSV-to-DB pipeline 구성
-- 질문 intent 분류 규칙 구현
-- MCP Tool 구조 설계
-- 제조 데이터 분석 Tool 함수 분리
-- LangGraph 기반 Agent workflow 구현
-- LangChain PromptTemplate 기반 grounded answer 정책 분리
-- FastAPI `/agent/query` endpoint 구현
-- PyTorch SensorAutoEncoder 기반 `/model/sensor-anomaly` endpoint 구현
-- Agent trace logging JSONL 저장
-- pytest 기반 기능 테스트 구성
-- Docker / Docker Compose 실행 환경 구성
-- GitHub Actions CI 기초 구성
-- README 및 실행 문서 작성
+call_tool
+→ tool_name에 맞는 Tool 함수 호출
+→ tool_result, evidence 저장
 
----
+build_answer
+→ Tool 결과의 summary/evidence를 최종 answer로 정리
+```
 
-## 15. Problem & Solution
+현재 workflow는 단순 선형 구조입니다. 일반 함수 호출로도 구현할 수 있지만, LangGraph를 사용하면 Agent 처리 단계를 node 단위로 분리하고, `AgentState`가 각 단계에서 어떻게 채워지는지 명확하게 표현할 수 있습니다. 향후 unknown intent 분기, evidence 검증, LLM 답변 생성, 오류 처리 node를 추가하기 쉽습니다.
 
-### Problem
+## 6. AgentState
 
-제조 데이터는 생산 로그, 품질 검사, 설비 센서처럼 여러 형태로 나뉘어 있습니다.
+`AgentState`는 LangGraph workflow 안에서 각 node가 공유하는 상태 객체입니다. 처음에는 `question`만 의미 있게 들어오고, node를 지나면서 `intent`, `tool_name`, `tool_result`, `answer`, `evidence`가 채워집니다.
 
-단순 챗봇 방식으로는 다음을 명확히 관리하기 어렵습니다.
+```text
+initial_state
+question만 포함
 
-- 어떤 데이터를 조회해야 하는지
-- 어떤 Tool을 호출해야 하는지
-- 어떤 근거를 사용해 답변했는지
-- 모델 추론 결과를 API 형태로 어떻게 제공할지
+route_question 이후
+question + intent + tool_name
 
-### Solution
+call_tool 이후
+question + intent + tool_name + tool_result + evidence
 
-사용자 질문을 intent로 분류하고, intent에 따라 MCP Tool을 선택하도록 구성했습니다.
+build_answer 이후
+question + intent + tool_name + tool_result + evidence + answer
+```
 
-각 Tool은 생산 로그, 품질 검사, 설비 센서 데이터를 분석하고, 결과를 `answer`와 `evidence`로 반환합니다.
+## 7. Intent와 Tool 매핑
 
-또한 PyTorch 기반 센서 이상탐지 endpoint를 별도로 제공해, Agent API와 모델 서빙 API를 함께 구성했습니다.
+| intent | tool_name | 실행 Tool | 설명 |
+|---|---|---|---|
+| `defect_rate` | `get_defect_rate_by_line` | `analyze_defect_rate_by_line()` | 최근 N일 라인별 불량률 분석 |
+| `machine_anomaly` | `detect_machine_anomalies` | `find_sensor_anomalies()` | 온도·진동·압력 기준 센서 이상 탐지 |
+| `line_performance` | `summarize_line_performance` | `summarize_performance_by_line()` | 라인별 생산성과 품질 상태 요약 |
+| `quality_issue_candidates` | `infer_quality_issue_candidates_tool` | `infer_quality_issue_candidates()` | 불량률과 센서 지표 기반 우선 점검 후보 추론 |
 
----
+현재 intent classification은 LLM 기반이 아니라 규칙 기반입니다. 입력 문자열에 포함된 키워드를 기준으로 intent를 분류합니다.
 
-## 16. Improvement Process
+## 8. Tool Layer
 
-개발 과정에서 다음 문제를 개선했습니다.
+`tools.py`는 실제 분석을 직접 수행하기보다 Agent가 호출할 수 있는 Tool 입구를 제공합니다. 실제 계산은 `quality_analyzer.py`와 `anomaly_detector.py`의 service 함수에 위임합니다.
 
-### 1) Tool Routing 개선
+```text
+graph.py
+→ Agent workflow 제어
 
-초기에는 질문에 "이상"과 "품질"이 함께 포함될 때 잘못된 Tool로 라우팅되는 문제가 있었습니다.
+tools.py
+→ Agent가 호출할 수 있는 Tool 입구
 
-이를 해결하기 위해 단순 키워드 포함 여부만 보지 않고, 원인·후보·왜와 같은 목적 단어를 우선 판별하도록 intent routing 우선순위를 조정했습니다.
+quality_analyzer.py / anomaly_detector.py
+→ 실제 데이터 분석 계산
+```
 
-### 2) Docker 실행 안정성 개선
+이 프로젝트의 Tool layer는 MCP 개념을 참고해 분석 기능을 Tool 단위로 분리한 구조입니다. 다만 현재 `/agent/query` 핵심 흐름은 MCP client가 protocol로 Tool을 호출하는 방식이 아니라, Python 코드 내부에서 Tool 함수를 직접 호출합니다. 따라서 구현 수준은 완전한 MCP protocol server라기보다 MCP-style Tool layer에 가깝습니다.
 
-Windows 가상환경 전체를 freeze한 requirements 때문에 Docker Linux 환경에서 `pywin32` 오류가 발생했습니다.
+## 9. 주요 분석 로직
 
-이후 실제 실행에 필요한 패키지만 남기는 방식으로 `requirements.txt`를 최소화해 Docker 실행 안정성을 개선했습니다.
+### 9.1 라인별 불량률 분석
 
----
+`analyze_defect_rate_by_line()`은 생산 로그와 품질 검사 로그를 `date`, `line_id` 기준으로 병합한 뒤 `defect_qty / output_qty`로 불량률을 계산합니다. 이후 `line_id`별로 총 생산량, 총 검사량, 총 불량 수량, 평균 불량률, 최대 불량률을 집계하고 평균 불량률이 가장 높은 라인을 찾습니다.
 
-## 17. What I Learned
+주의할 점은 현재 `avg_defect_rate`가 날짜별 `defect_rate`의 단순 평균이라는 점입니다. 생산량 차이를 반영하려면 `total_defect_qty / total_output_qty` 기반의 weighted defect rate를 추가할 수 있습니다.
 
-이 프로젝트를 통해 AI Agent 개발은 모델 호출만으로 완성되지 않는다는 점을 배웠습니다.
+### 9.2 라인별 생산성 및 품질 요약
 
-실제로 활용 가능한 Agent를 만들기 위해서는 다음 요소가 함께 설계되어야 합니다.
+`summarize_performance_by_line()`은 `output_qty / operating_hours`로 생산성을 계산하고, 라인별 평균 생산성과 평균 불량률을 함께 요약합니다. 이 함수는 생산성 관점과 품질 관점을 동시에 제공합니다.
 
-- 데이터 구조
-- Tool 설계
-- Workflow
-- API 응답 구조
-- 근거 기반 답변 정책
-- 모델 추론 endpoint
-- 테스트와 실행 환경
+### 9.3 품질 이상 원인 후보 추론
 
-또한 Agent가 모든 로직을 직접 처리하는 것보다, 질문 분류와 Tool 호출, 데이터 분석, 답변 생성을 분리하는 방식이 테스트와 개선에 유리하다는 점을 확인했습니다.
+`infer_quality_issue_candidates()`는 불량률과 센서 데이터를 함께 보고 우선 점검할 후보 라인을 정렬합니다. 평균 불량률, 최대 온도 초과 정도, 최대 진동 초과 정도를 반영해 규칙 기반 `risk_score`를 계산합니다.
 
----
+```text
+risk_score = avg_defect_rate * 100
+           + max(max_temperature - 80, 0) * 0.3
+           + max(max_vibration - 4, 0) * 2
+```
 
-## 18. Limitations & Improvements
+이 점수는 머신러닝 모델이 예측한 원인 확률이 아닙니다. 실제 원인 확정이 아니라 현장에서 우선 점검할 후보를 좁히기 위한 휴리스틱 점수입니다.
 
-현재 프로젝트는 포트폴리오용 샘플 제조 데이터와 기본 AutoEncoder 구조를 기반으로 구성되어 있습니다.
+### 9.4 센서 이상 탐지
 
-실제 서비스에 적용하기 위해서는 다음 보완이 필요합니다.
+`find_sensor_anomalies()`는 최근 N일 센서 로그에서 온도, 진동, 압력 중 하나라도 기준값 이상인 행을 이상 구간으로 추출합니다.
 
-- 실제 제조 현장 데이터 연동
-- 운영 DB 전환
-- 실제 정상 센서 데이터로 학습한 model weight 적용
-- validation 기반 threshold 설정
-- 모델 성능 검증
-- API 요청 로그 및 모니터링
-- 권한 관리 및 보안
-- 실시간 데이터 스트리밍
-- Redis 또는 Kafka 기반 비동기 처리
-- LangSmith 등 trace 관리 도구 연동
-- 실제 MCP Client 연동
-- 클라우드 배포 환경 구성
+```text
+TEMP_THRESHOLD = 85.0
+VIBRATION_THRESHOLD = 4.5
+PRESSURE_THRESHOLD = 2.8
+```
 
----
+이상 행에는 `temperature_high`, `vibration_high`, `pressure_high` 같은 reason이 붙습니다. summary의 총 이상 건수는 전체 이상 행 수를 사용하지만, evidence에는 대표로 앞 10개만 반환합니다.
 
-## 19. Interview Summary
+## 10. Data Layer
 
-Manufacturing MCP Agent는 제조 데이터를 기반으로 사용자의 질문을 처리하고, Agent가 필요한 Tool을 선택해 DB 조회나 모델 추론 결과를 연결하는 AI Agent 백엔드 프로젝트입니다.
+### 10.1 CSV 기반 data_loader
 
-FastAPI로 API endpoint를 구성하고, 제조 데이터는 SQLite에 저장했으며, LangGraph workflow를 통해 질문 intent에 따라 적절한 Tool을 호출하도록 설계했습니다.
+`data_loader.py`는 생산 로그, 품질 검사 로그, 센서 로그 CSV를 pandas DataFrame으로 읽고 최근 N일 데이터만 필터링합니다. 최근 N일은 실제 오늘 날짜 기준이 아니라 CSV 데이터 안의 가장 최근 날짜 기준입니다.
 
-또한 PyTorch SensorAutoEncoder 기반 `/model/sensor-anomaly` endpoint를 제공해 모델 결과를 API 형태로 확인할 수 있도록 구성했습니다.
+```text
+load_production_logs()
+load_quality_logs()
+load_sensor_logs()
+filter_recent_by_date()
+```
 
-로컬 환경에서 pytest 9개 테스트 통과, Swagger 기반 `/agent/query`, `/model/sensor-anomaly` 응답을 확인했습니다.
+### 10.2 SQLite 준비 코드
 
-이 프로젝트의 핵심은 질문을 바로 답변하지 않고, 질문 의도 분류 → Tool 선택 → 데이터 분석 → 근거 반환 → API 응답으로 이어지는 구조를 구현한 점입니다.
+프로젝트에는 SQLite 기반 DB 구조도 준비되어 있습니다.
+
+```text
+schema.sql
+→ production_logs, quality_inspection, machine_sensor_logs 테이블 정의
+
+init_db.py
+→ schema.sql 실행 후 CSV 데이터를 SQLite에 적재
+
+db_loader.py
+→ SQLite에서 최근 N일 데이터 조회 helper 제공
+```
+
+다만 현재 Agent 핵심 분석 흐름은 DB가 아니라 CSV 기반 `data_loader.py`를 사용합니다. 따라서 DB는 확장 기반으로 준비된 상태입니다.
+
+## 11. PromptTemplate과 답변 생성 방식
+
+`build_answer()`는 LangChain `PromptTemplate`을 사용해 답변 생성용 `prompt_text`를 만들지만, 현재 버전에서는 실제 LLM 호출을 하지 않습니다. 최종 answer는 Tool 함수가 만든 `summary`를 그대로 사용합니다.
+
+이 방식은 같은 입력과 같은 데이터에 대해 같은 결과가 나오는 deterministic한 응답 흐름을 먼저 검증하기 위한 선택입니다. 이후에는 동일한 evidence를 기반으로 LLM 답변 생성이나 LangSmith trace 확장으로 연결할 수 있습니다.
+
+## 12. Trace Logging
+
+현재 프로젝트에는 LangSmith가 직접 연동되어 있지 않습니다. 대신 `trace_logger.py`를 통해 `question`, `intent`, `tool_name`, `evidence_count`, `status` 등을 JSONL 파일로 남기는 자체 trace log가 있습니다.
+
+로그는 `logs/agent_trace.jsonl`에 append 방식으로 누적됩니다. 서버가 종료되어도 파일이 유지되면 로그는 남아 있지만, Docker 컨테이너 내부에서 볼륨 없이 실행한 뒤 컨테이너를 삭제하면 로그가 사라질 수 있습니다.
+
+## 13. AutoEncoder Model Endpoint
+
+`/model/sensor-anomaly` endpoint는 자연어 입력이 아니라 센서값 3개를 직접 입력받습니다.
+
+```text
+temperature
+vibration
+pressure
+```
+
+`SensorAutoEncoder`는 3차원 입력을 encoder에서 2차원으로 압축하고, decoder에서 다시 3차원으로 복원합니다. 입력값과 복원값 사이의 평균 제곱 오차를 reconstruction error로 계산하고, 이를 `anomaly_score`로 사용합니다.
+
+현재 모델은 학습된 weight를 로드한 운영 모델이 아닙니다. PyTorch 모델을 FastAPI endpoint로 서빙하는 구조를 보여주기 위한 기본 구현입니다. 실제 운영에서는 정상 센서 데이터 기반 학습, weight 저장/로드, 입력 정규화, 검증 데이터 기반 threshold 산정이 필요합니다.
+
+## 14. Test
+
+현재 테스트는 크게 세 범위로 나뉩니다.
+
+```text
+test_agent_flow.py
+→ run_agent()를 호출해 자연어 입력이 intent/tool_name/answer/evidence로 이어지는지 검증
+
+test_tools.py
+→ Tool 함수를 직접 호출해 summary/evidence 형식과 샘플 데이터 기준 결과 검증
+
+test_torch_model.py
+→ predict_sensor_anomaly()가 anomaly_score와 is_anomaly를 반환하는지 검증
+```
+
+현재 테스트는 성공 흐름 중심입니다. 실무 수준으로 확장하려면 다음 테스트를 추가할 수 있습니다.
+
+- FastAPI TestClient 기반 endpoint 테스트
+- 입력 누락/타입 오류에 대한 422 validation 테스트
+- 빈 입력, 지원하지 않는 입력, 키워드 겹침 테스트
+- CSV 필수 컬럼 및 날짜 필터 테스트
+- 데이터 품질 테스트
+- Tool 실패 및 evidence 없는 경우 테스트
+- DB loader 테스트
+- trace log 생성 테스트
+- Docker build 및 CI 재현성 테스트
+
+## 15. Docker
+
+Dockerfile은 프로젝트 실행 환경을 재현 가능하게 만들기 위한 파일입니다.
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN python scripts_generate_sample_data.py
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Docker 실행 예시:
+
+```bash
+docker build -t manufacturing-mcp-agent .
+docker run -p 8000:8000 manufacturing-mcp-agent
+```
+
+## 16. GitHub Actions CI
+
+GitHub Actions CI는 `main` 브랜치에 push되거나 pull request가 열릴 때 자동으로 실행됩니다. Ubuntu 환경에서 Python 3.11을 설정하고, requirements를 설치하고, 샘플 데이터를 생성한 뒤 pytest를 실행합니다.
+
+```text
+checkout repository
+→ set up Python 3.11
+→ install dependencies
+→ generate sample data
+→ run pytest
+```
+
+## 17. 실행 방법
+
+### Local
+
+```bash
+pip install -r requirements.txt
+python scripts_generate_sample_data.py
+uvicorn app.main:app --reload
+```
+
+Swagger UI:
+
+```text
+http://localhost:8000/docs
+```
+
+### Test
+
+```bash
+pytest
+```
+
+### Docker
+
+```bash
+docker build -t manufacturing-mcp-agent .
+docker run -p 8000:8000 manufacturing-mcp-agent
+```
+
+## 18. 현재 구현 수준
+
+구현된 것:
+
+- FastAPI 기반 `/agent/query` endpoint
+- LangGraph 기반 route_question → call_tool → build_answer workflow
+- 규칙 기반 intent classification
+- MCP-style Tool layer
+- CSV 기반 제조 데이터 분석
+- summary/evidence 기반 응답
+- JSONL trace log
+- PyTorch AutoEncoder model endpoint
+- pytest 기반 핵심 흐름 검증
+- Dockerfile
+- GitHub Actions CI
+- SQLite schema 및 loader 준비 코드
+
+아직 구현되지 않았거나 제한적인 것:
+
+- LLM 기반 intent classification
+- LLM 답변 생성
+- 사용자 입력에서 days, line_id 같은 tool_args 추출
+- 실제 MCP protocol 기반 Tool server/client 분리
+- Agent workflow에서 AutoEncoder Tool 호출
+- DB 기반 분석 흐름 전환
+- AutoEncoder 학습 weight 로드
+- 검증 데이터 기반 threshold 산정
+- FastAPI endpoint 통합 테스트
+- 실패 케이스와 데이터 품질 테스트
+- LangSmith 직접 연동
+
+## 19. 한계와 개선 방향
+
+현재 프로젝트는 샘플 CSV 기반이며, 실제 제조 현장의 복잡한 데이터 조건과는 차이가 있습니다. intent classification은 규칙 기반이므로 표현이 애매하거나 키워드가 겹치는 입력에는 한계가 있습니다. 또한 Tool 호출 인자가 `days=7`로 고정되어 있어 입력 문장에 포함된 기간이나 라인 조건을 반영하지 못합니다.
+
+개선 방향은 다음과 같습니다.
+
+- LLM 기반 JSON intent classification 추가
+- question에서 `days`, `line_id`, `metric` 등 tool_args 추출
+- CSV 기반 분석을 SQLite/PostgreSQL 기반 조회로 전환
+- MCP protocol 기반 Tool server/client 구조 분리
+- evidence 검증 node 추가
+- LLM 답변 생성 node 추가
+- AutoEncoder 학습, weight 저장/로드, threshold 산정
+- FastAPI endpoint 테스트와 실패 케이스 테스트 강화
+- LangSmith 또는 OpenTelemetry 기반 trace 확장
+- Docker healthcheck, lint, type check, coverage CI 추가
