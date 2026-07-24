@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="285" viewBox="0 0 1200 285" role="img">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L0,6 L9,3 z" fill="#3561D8"/>
+  </marker>
+</defs>
+<rect width="1200" height="285" rx="24" fill="#F5F7F9"/>
+<text x="48" y="46" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="27" font-weight="800" fill="#151F32">제조 품질 분석 NLP Agent | Agent Workflow</text>
+<text x="48" y="73" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="15" font-weight="500" fill="#5F6675">질문 해석부터 근거 데이터 반환까지의 실행 순서</text>
+
+<rect x="48" y="105" width="186" height="128" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="48" y="105" width="8" height="128" rx="4" fill="#21AFC4"/>
+<text x="72" y="139" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">QUESTION</text>
+<text x="72" y="166" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">사용자 질문</text>
+<text x="72" y="188" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">예: 최근 7일 불량률</text>
+<rect x="272" y="105" width="186" height="128" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="272" y="105" width="8" height="128" rx="4" fill="#3561D8"/>
+<text x="296" y="139" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">CLASSIFY</text>
+<text x="296" y="166" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">목적 표현 확인</text>
+<text x="296" y="188" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Intent 결정</text>
+<rect x="496" y="105" width="186" height="128" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="496" y="105" width="8" height="128" rx="4" fill="#151F32"/>
+<text x="520" y="139" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">SELECT TOOL</text>
+<text x="520" y="166" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">4개 Tool 중</text>
+<text x="520" y="188" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">1개 선택</text>
+<rect x="720" y="105" width="186" height="128" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="720" y="105" width="8" height="128" rx="4" fill="#EAA12B"/>
+<text x="744" y="139" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">PROCESS DATA</text>
+<text x="744" y="166" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">CSV / SQLite</text>
+<text x="744" y="188" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Filter, Group, Aggregate</text>
+<rect x="944" y="105" width="208" height="128" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="944" y="105" width="8" height="128" rx="4" fill="#2FA66A"/>
+<text x="968" y="139" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">RETURN</text>
+<text x="968" y="166" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Summary → Answer</text>
+<text x="968" y="188" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Rows → Evidence</text>
+
+<line x1="234" y1="169" x2="272" y2="169" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="458" y1="169" x2="496" y2="169" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="682" y1="169" x2="720" y2="169" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="906" y1="169" x2="944" y2="169" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+</svg>

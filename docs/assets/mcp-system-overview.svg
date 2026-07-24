@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L0,6 L9,3 z" fill="#3561D8"/>
+  </marker>
+</defs>
+<rect width="1200" height="430" rx="24" fill="#F5F7F9"/>
+<text x="48" y="48" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="27" font-weight="800" fill="#151F32">제조 품질 분석 NLP Agent | System Overview</text>
+<text x="48" y="76" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="15" font-weight="500" fill="#5F6675">자연어 질문을 분석 기능으로 연결하고, 답변과 근거 데이터를 함께 반환</text>
+
+<rect x="48" y="118" width="185" height="126" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="48" y="118" width="8" height="126" rx="4" fill="#21AFC4"/>
+<text x="72" y="152" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">1. QUESTION</text>
+<text x="72" y="179" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">자연어 제조 질문</text>
+<text x="72" y="201" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">기간, 라인, 원인</text>
+<rect x="272" y="118" width="185" height="126" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="272" y="118" width="8" height="126" rx="4" fill="#3561D8"/>
+<text x="296" y="152" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">2. INTENT</text>
+<text x="296" y="179" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">목적 표현 우선</text>
+<text x="296" y="201" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">4개 Intent 분류</text>
+<rect x="496" y="118" width="185" height="126" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="496" y="118" width="8" height="126" rx="4" fill="#151F32"/>
+<text x="520" y="152" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">3. ROUTER</text>
+<text x="520" y="179" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Intent → Tool</text>
+<text x="520" y="201" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">LangGraph State</text>
+<rect x="720" y="118" width="185" height="126" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="720" y="118" width="8" height="126" rx="4" fill="#EAA12B"/>
+<text x="744" y="152" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">4. TOOL</text>
+<text x="744" y="179" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Load, Filter</text>
+<text x="744" y="201" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Aggregate, Analyze</text>
+<rect x="944" y="118" width="208" height="126" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<rect x="944" y="118" width="8" height="126" rx="4" fill="#2FA66A"/>
+<text x="968" y="152" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="16" font-weight="800" fill="#151F32">5. RESPONSE</text>
+<text x="968" y="179" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Answer</text>
+<text x="968" y="201" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Evidence</text>
+<text x="968" y="223" text-anchor="start" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="500" fill="#5F6675">Tool Name</text>
+
+<line x1="233" y1="181" x2="272" y2="181" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="457" y1="181" x2="496" y2="181" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="681" y1="181" x2="720" y2="181" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="905" y1="181" x2="944" y2="181" stroke="#3561D8" stroke-width="3" marker-end="url(#arrow)"/>
+
+<rect x="154" y="302" width="360" height="82" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<text x="334" y="330" text-anchor="middle" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="17" font-weight="800" fill="#151F32">MCP Tool Interface</text>
+<text x="334" y="354" text-anchor="middle" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="600" fill="#21AFC4">4 FastMCP Tools</text>
+<text x="334" y="375" text-anchor="middle" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="13" font-weight="500" fill="#5F6675">같은 Service 함수를 Tool로 노출</text>
+
+<rect x="686" y="302" width="360" height="82" rx="16" fill="#FFFFFF" stroke="#D9E0E8"/>
+<text x="866" y="330" text-anchor="middle" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="17" font-weight="800" fill="#151F32">Independent Model API</text>
+<text x="866" y="354" text-anchor="middle" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="14" font-weight="600" fill="#21AFC4">POST /model/sensor-anomaly</text>
+<text x="866" y="375" text-anchor="middle" font-family="'Noto Sans CJK KR','Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif" font-size="13" font-weight="500" fill="#5F6675">AutoEncoder 추론은 Agent 흐름과 분리</text>
+
+<line x1="812" y1="244" x2="866" y2="302" stroke="#5F6675" stroke-width="2" stroke-dasharray="6 5"/>
+</svg>
