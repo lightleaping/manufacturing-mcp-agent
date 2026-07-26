@@ -1,15 +1,14 @@
 # 제조 품질 분석 NLP Agent
 
-**Manufacturing Intent Routing, MCP Tools, Evidence, and FastAPI**
-
-> 제조 자연어 질문을 Intent로 분류하고, 필요한 분석 Tool을 실행해 Answer와 Evidence를 반환하는 제조 데이터 분석 Agent 프로젝트입니다.
+> **Manufacturing Intent Routing, MCP Tools, Evidence, and FastAPI**  
+> 제조 자연어 질문을 Intent로 분류하고, 필요한 분석 Tool을 실행해 **Answer와 Evidence**를 반환하는 제조 데이터 분석 Agent 프로젝트입니다.
 
 <p>
-  <img src="https://img.shields.io/badge/Python-3.11-3561D8?style=flat-square&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/FastAPI-Agent%20API-21AFC4?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/LangGraph-Workflow-151F32?style=flat-square" alt="LangGraph">
-  <img src="https://img.shields.io/badge/MCP-4%20Tools-3561D8?style=flat-square" alt="MCP">
-  <img src="https://img.shields.io/badge/Docker%20%7C%20CI-Verified-21AFC4?style=flat-square" alt="Docker and CI">
+  <img src="https://img.shields.io/badge/Python-3.11-3561D8">
+  <img src="https://img.shields.io/badge/FastAPI-API-21AFC4">
+  <img src="https://img.shields.io/badge/LangGraph-Workflow-151F32">
+  <img src="https://img.shields.io/badge/FastMCP-4%20Tools-3561D8">
+  <img src="https://img.shields.io/badge/Docker-CI-5F6675">
 </p>
 
 ---
@@ -25,7 +24,7 @@
 
 모든 질문을 하나의 함수나 고정 답변으로 처리하면 기능이 복잡하게 얽히고, 어떤 데이터가 답변의 근거인지 확인하기 어렵습니다. 그래서 질문 해석과 실제 분석 기능을 분리하고, 선택된 Tool의 결과에서 Answer와 Evidence를 함께 만드는 구조를 구현했습니다.
 
-<sub>참고: MCP Tool은 이름, 설명과 입력 Schema를 가진 독립 기능으로 외부 시스템 조회나 계산을 모델이 호출할 수 있게 노출합니다. 이 프로젝트는 FastMCP로 4개 제조 분석 Tool을 등록했습니다.</sub>
+> MCP Server는 이름, 설명, 입력 Schema를 가진 4개 제조 분석 Tool을 외부 호출 Interface로 노출합니다. `/agent/query`가 MCP Client를 통해 MCP Server를 호출하는 구조는 아니며, Agent API는 같은 Python Service 함수를 내부에서 직접 사용합니다.
 
 ---
 
@@ -36,7 +35,7 @@
 | **기간** | 2026.04–05 |
 | **형태** | 개인 프로젝트 |
 | **목표** | 제조 자연어 질문을 분석 기능으로 연결하고, 답변과 근거 데이터를 함께 반환 |
-| **범위** | 샘플 제조 데이터, Intent, Router, LangGraph, 4개 분석 Tool, MCP Server, FastAPI, PyTorch Model Endpoint, Docker, GitHub Actions, pytest |
+| **프로젝트 범위** | 샘플 제조 데이터, Intent, Router, LangGraph, 4개 분석 Tool, FastMCP Server, FastAPI, PyTorch Model Endpoint, Docker, GitHub Actions, pytest |
 | **NLP 범위** | 자연어 질문의 목적을 규칙 기반 Intent로 분류하고 처리 경로를 결정 |
 | **기술** | Python, FastAPI, Pydantic, LangGraph, MCP FastMCP, pandas, SQLite, PyTorch, Docker, GitHub Actions |
 | **구현 결과** | 4 Intents, 4 Agent Tools, 4 MCP Tools, 2 POST Endpoints, 핵심 테스트 9개 |
@@ -47,17 +46,17 @@
 
 | Problem | Implementation | Result |
 |---|---|---|
-| 질문마다 필요한 데이터와 계산 방식이 다름 | Intent와 Router를 두고 기능별 Tool을 분리 | 4개 질문 유형을 4개 분석 Tool로 연결 |
-| 답변 문장만으로는 결과를 검증하기 어려움 | Tool이 Summary와 Evidence Row를 함께 반환 | API 응답에서 Answer와 근거 데이터를 동시에 확인 |
-| 목적 표현과 제조 키워드가 섞이면 잘못 Routing될 수 있음 | “원인”, “왜”, “후보” 같은 목적 표현을 우선 확인 | 복합 질문의 Routing 우선순위를 명시 |
-| Agent와 모델 기능을 한 흐름처럼 보이면 책임이 불명확함 | `/agent/query`와 `/model/sensor-anomaly`를 독립 Endpoint로 분리 | 규칙 기반 Agent Tool과 PyTorch Model Service의 역할 구분 |
-| 로컬 환경에서만 실행되면 재현이 어려움 | Docker, Docker Compose, GitHub Actions 구성 | 설치, Test, Container 실행 경로 제공 |
+| 질문마다 필요한 계산 방식이 다름 | Intent와 Router를 두고 기능별 Tool 분리 | 4개 질문 유형을 4개 분석 기능으로 연결 |
+| 답변 문장만으로 결과 검증이 어려움 | Summary와 Evidence Row를 함께 반환 | API 응답에서 답변과 근거 데이터를 동시에 확인 |
+| 목적 표현과 제조 키워드가 섞일 수 있음 | 목적 표현을 우선 확인하는 Routing 규칙 적용 | 복합 질문의 우선순위를 명시 |
+| Agent와 Model 기능의 책임이 혼동될 수 있음 | `/agent/query`와 `/model/sensor-anomaly` 분리 | 규칙 기반 분석과 PyTorch 추론 역할 구분 |
+| 로컬 환경에만 의존할 수 있음 | Docker, Docker Compose, GitHub Actions 구성 | 설치, 테스트, 컨테이너 실행 경로 제공 |
 
 ---
 
 ## System Overview
 
-<img src="./docs/assets/mcp-system-overview.png" alt="제조 품질 분석 NLP Agent 시스템 구성도" width="100%">
+<img src="./docs/assets/mcp-system-overview.png" alt="Manufacturing MCP Agent 시스템 구성도" width="100%">
 
 ### Responsibility Separation
 
@@ -71,25 +70,27 @@
 | **MCP Server** | 동일한 4개 제조 분석 기능을 FastMCP Tool로 노출 |
 | **Model API** | 3개 센서값을 AutoEncoder에 입력해 이상 점수 반환 |
 
-> Agent Tool 흐름과 PyTorch AutoEncoder Endpoint는 독립적으로 구현되어 있습니다. 모델 결과가 Agent Answer에 자동으로 연결된 것처럼 표현하지 않습니다.
+> `/agent/query`는 LangGraph 내부에서 Python Tool 함수를 직접 호출합니다. FastMCP Server는 동일한 Service 기능을 별도 Tool Interface로 노출합니다.
+
+> Agent Tool 흐름과 PyTorch AutoEncoder Endpoint는 독립적으로 구현되어 있습니다. Model 결과가 Agent Answer에 자동으로 연결된 것처럼 표현하지 않습니다.
 
 ---
 
 ## Practical Evaluation Criteria
 
-Agent 프로젝트에는 하나의 정확도 수치만으로 충분하지 않습니다. 질문이 올바른 기능으로 연결되는지, Tool 결과가 검증 가능한지, Interface와 실행 환경이 일관적인지를 함께 확인해야 합니다.
+Agent 프로젝트는 하나의 정확도 수치만으로 평가하기 어렵습니다. 질문이 올바른 기능으로 연결되는지, Tool 결과를 검증할 수 있는지, Interface와 실행 환경이 일관적인지를 함께 확인해야 합니다.
 
 | 실무 관점 | 평가 기준 | 프로젝트에서 확인한 근거 |
 |---|---|---|
 | **Routing 정확성** | 대표 질문이 올바른 Intent와 Tool로 연결되는가 | 4개 Intent와 Tool Mapping, Agent Flow Test |
-| **Tool 계약 명확성** | Tool의 이름, 목적, 입력값이 구분되는가 | FastMCP `@mcp.tool()`로 4개 Tool 등록, `days` 입력 제공 |
-| **응답 검증 가능성** | Answer가 근거 데이터와 연결되는가 | `question`, `intent`, `tool_name`, `answer`, `evidence` 응답 구조 |
-| **입력 검증** | 잘못된 Request가 실행 전에 차단되는가 | FastAPI와 Pydantic Request/Response Model |
-| **책임 분리** | Agent 분석과 Model 추론이 섞이지 않는가 | `/agent/query`와 `/model/sensor-anomaly` Endpoint 분리 |
-| **재현성과 회귀 방지** | 다른 환경에서도 설치와 검증이 가능한가 | pytest 핵심 테스트 9개, Docker, GitHub Actions CI |
-| **과장 없는 범위 설명** | NLP, 원인 후보와 모델의 한계를 구분하는가 | 규칙 기반 Intent, 상관·임계값 기반 후보, 독립 Model API로 명시 |
+| **Tool 계약 명확성** | Tool의 목적과 입력값이 구분되는가 | FastMCP `@mcp.tool()` 기반 4개 Tool |
+| **응답 검증 가능성** | Answer가 근거 데이터와 연결되는가 | `question`, `intent`, `tool_name`, `answer`, `evidence` 구조 |
+| **입력 검증** | 잘못된 요청이 실행 전에 차단되는가 | FastAPI와 Pydantic Schema |
+| **책임 분리** | Agent 분석과 Model 추론이 섞이지 않는가 | Agent Endpoint와 Model Endpoint 분리 |
+| **재현성** | 다른 환경에서도 설치와 검증이 가능한가 | pytest, Docker, GitHub Actions |
+| **범위 설명** | 규칙 기반 분석과 모델 결과의 한계를 구분하는가 | 규칙 기반 Intent, 휴리스틱 후보, 독립 Model API 명시 |
 
-> 현재 프로젝트가 충족한 범위는 **Intent와 Tool의 책임 분리, Evidence 기반 응답, MCP Tool 노출, API 검증, Container와 CI 구성**입니다. 실제 운영 단계에서는 더 큰 Intent 평가 Dataset, 권한 제어, Tool Audit, Timeout과 Monitoring이 추가로 필요합니다.
+현재 구현 범위는 Intent와 Tool 책임 분리, Evidence 기반 응답, MCP Tool 노출, API 검증, Container와 CI 구성입니다. 실제 운영 단계에서는 더 큰 Intent 평가 Dataset, 권한 제어, Tool Audit, Timeout, Monitoring이 추가로 필요합니다.
 
 ---
 
@@ -98,9 +99,9 @@ Agent 프로젝트에는 하나의 정확도 수치만으로 충분하지 않습
 | Intent | Agent / MCP Tool | Question Example | Result |
 |---|---|---|---|
 | `defect_rate` | `get_defect_rate_by_line` | 최근 7일 불량률이 가장 높은 라인은? | 라인별 생산량, 불량량, 불량률 |
-| `sensor_anomaly` | `detect_machine_anomalies` | 진동이 비정상적인 설비를 찾아줘 | 임계값 초과 센서 기록 |
+| `machine_anomaly` | `detect_machine_anomalies` | 진동이 비정상적인 설비를 찾아줘 | 임계값 초과 센서 기록 |
 | `line_performance` | `summarize_line_performance` | LINE_A의 생산성과 품질 상태는? | 생산량, 불량률, 평균 센서값 |
-| `quality_issue_candidates` | `infer_quality_issue_candidates_tool` | 불량 원인 후보를 알려줘 | 불량률과 센서 이상 기반 후보 |
+| `quality_issue_candidates` | `infer_quality_issue_candidates_tool` | 불량 원인 후보를 알려줘 | 불량률과 센서 이상 기반 점검 후보 |
 
 ### Routing Priority
 
@@ -112,30 +113,27 @@ Agent 프로젝트에는 하나의 정확도 수치만으로 충분하지 않습
 → Summary와 Evidence 반환
 ```
 
-“불량 원인”처럼 여러 의미가 섞인 질문은 단순 키워드 개수보다 질문의 목적 표현을 우선해 Routing합니다.
+“불량 원인”처럼 여러 의미가 섞인 질문은 키워드 개수보다 질문의 목적 표현을 우선해 Routing합니다.
 
 ---
 
 ## Agent Workflow
 
-<img src="./docs/assets/mcp-agent-workflow.png" alt="제조 품질 분석 NLP Agent 실행 흐름" width="100%">
+<img src="./docs/assets/mcp-agent-workflow.png" alt="Manufacturing MCP Agent Workflow" width="100%">
 
 | 단계 | 처리 |
 |---|---|
 | **Question** | 자연어 제조 질문 입력 |
 | **Classify** | 목적 표현과 제조 키워드로 Intent 결정 |
-| **Select Tool** | Intent에 대응하는 1개 Tool 선택 |
-| **Process Data** | CSV 또는 SQLite에서 기간 Filtering과 집계 수행 |
+| **Select Tool** | Intent에 대응하는 하나의 Tool 선택 |
+| **Process Data** | CSV 데이터의 기간 필터링과 집계 수행 |
 | **Return** | Summary는 Answer, 집계 Row는 Evidence로 반환 |
 
 ---
 
 ## Technical Details
 
-<details open>
-<summary><b>01 | Agent State and LangGraph</b></summary>
-
-<br>
+### 01 | Agent State and LangGraph
 
 Agent State에는 다음 정보가 단계별로 추가됩니다.
 
@@ -158,12 +156,7 @@ route_question
 
 현재 Intent는 규칙 기반입니다. 대규모 언어 모델을 학습하거나 LLM이 최종 답변을 생성하는 프로젝트로 표현하지 않습니다.
 
-</details>
-
-<details>
-<summary><b>02 | Data Layer</b></summary>
-
-<br>
+### 02 | Data Layer
 
 | Data | Purpose |
 |---|---|
@@ -173,20 +166,19 @@ route_question
 
 주요 처리:
 
-- CSV Loading
-- Date Range Filtering
-- Line Grouping
-- Sum과 Mean Aggregation
-- Defect Rate Calculation
-- Threshold-based Sensor Check
-- Evidence Row Construction
+```text
+CSV Loading
+→ Date Range Filtering
+→ Line Grouping
+→ Sum and Mean Aggregation
+→ Defect Rate Calculation
+→ Threshold-based Sensor Check
+→ Evidence Row Construction
+```
 
-</details>
+현재 핵심 Agent 분석 흐름은 CSV 기반입니다. SQLite Schema와 Loader는 저장 구조 확장을 위한 기반으로 포함되어 있습니다.
 
-<details>
-<summary><b>03 | MCP Server</b></summary>
-
-<br>
+### 03 | FastMCP Server
 
 `app/mcp_server/server.py`에서 FastMCP Server를 생성하고 4개 Tool을 등록합니다.
 
@@ -195,35 +187,32 @@ mcp = FastMCP("manufacturing-mcp-agent")
 
 @mcp.tool()
 def defect_rate_by_line(days: int = 7) -> dict:
-    ...
+    return get_defect_rate_by_line(days=days)
 
 @mcp.tool()
 def machine_anomalies(days: int = 7) -> dict:
-    ...
+    return detect_machine_anomalies(days=days)
 
 @mcp.tool()
 def line_performance(days: int = 7) -> dict:
-    ...
+    return summarize_line_performance(days=days)
 
 @mcp.tool()
 def quality_issue_candidates(days: int = 7) -> dict:
-    ...
+    return infer_quality_issue_candidates_tool(days=days)
 ```
 
-MCP Tool은 새로운 분석 로직을 중복 구현하지 않고, `app/services/`의 기존 Service 함수를 호출합니다.
+MCP Tool은 새로운 분석 로직을 중복 구현하지 않고 `app/services/`의 기존 Service 함수를 호출합니다.
 
-</details>
-
-<details>
-<summary><b>04 | PyTorch Sensor Model Endpoint</b></summary>
-
-<br>
+### 04 | PyTorch Sensor Model Endpoint
 
 입력:
 
-- `temperature`
-- `vibration`
-- `pressure`
+```text
+temperature
+vibration
+pressure
+```
 
 처리:
 
@@ -236,14 +225,22 @@ MCP Tool은 새로운 분석 로직을 중복 구현하지 않고, `app/services
 → anomaly_score and is_anomaly
 ```
 
-이 기능은 Agent의 규칙 기반 `sensor_anomaly` Tool과 별도의 Model Serving Endpoint입니다.
+이 기능은 Agent의 규칙 기반 `machine_anomaly` Tool과 별도의 Model Serving Endpoint입니다.
 
-</details>
+현재 Model은 포트폴리오용 기본 AutoEncoder 구조이며, 학습된 운영 Weight를 검증한 모델이 아닙니다. 실제 운영에서는 정상 센서 데이터로 학습한 Weight와 Validation 기반 Threshold가 필요합니다.
 
-<details>
-<summary><b>05 | Validation</b></summary>
+### 05 | Trace and Validation
 
-<br>
+Agent 실행 시 `logs/agent_trace.jsonl`에 다음 정보가 기록됩니다.
+
+```text
+created_at
+question
+intent
+tool_name
+evidence_count
+status
+```
 
 핵심 테스트 범위:
 
@@ -261,33 +258,6 @@ tests/test_agent_flow.py
 tests/test_tools.py
 tests/test_torch_model.py
 ```
-
-</details>
-
-<details>
-<summary><b>06 | Current Scope and Next Steps</b></summary>
-
-<br>
-
-### Current Scope
-
-- 공개용 제조 샘플 데이터 기반
-- 규칙 기반 Intent Classification
-- pandas 집계와 임계값 기반 Tool
-- FastMCP Server 4 Tools
-- Agent API와 Model API 분리
-- 인증, 권한과 운영 Monitoring은 범위 밖
-
-### Next Steps
-
-1. Intent별 정답 질문 Dataset과 Confusion Matrix 추가
-2. 규칙 기반 Intent와 LLM Structured Intent 비교
-3. Tool Argument와 Output Schema 검증 강화
-4. Tool 호출 Timeout, Audit Log, 권한 제어
-5. Agent Tool과 Model Endpoint의 명시적 연결 정책
-6. 실제 제조 데이터 기반 Threshold와 Drift 기준 설계
-
-</details>
 
 ---
 
@@ -352,6 +322,8 @@ Response:
   "note": "Reconstruction error based anomaly result"
 }
 ```
+
+> Response의 수치는 구조 예시입니다. 실제 `anomaly_score`는 실행 시 생성된 기본 Model 상태와 입력값에 따라 달라질 수 있습니다.
 
 ---
 
@@ -432,12 +404,36 @@ manufacturing-mcp-agent/
 
 ---
 
+## Current Scope and Next Steps
+
+### Current Scope
+
+- 공개용 제조 샘플 데이터 기반
+- 규칙 기반 Intent Classification
+- pandas 집계와 임계값 기반 Tool
+- FastMCP Server 4 Tools
+- Agent API와 Model API 분리
+- FastMCP Server 4 Tools
+- Docker와 GitHub Actions 구성
+- 인증, 권한, 운영 Monitoring은 범위 밖
+
+### Next Steps
+
+1. Intent별 정답 질문 Dataset과 Confusion Matrix 추가
+2. 규칙 기반 Intent와 LLM Structured Intent 비교
+3. Tool Argument와 Output Schema 검증 강화
+4. Tool 호출 Timeout, Audit Log, 권한 제어
+5. Agent Tool과 Model Endpoint의 명시적 연결 정책
+6. 실제 제조 데이터 기반 Threshold와 Drift 기준 설계
+
+---
+
 ## What This Project Demonstrates
 
 - 자연어 제조 질문을 기능별 Intent로 분류한 경험
 - Intent, Router, Tool, Answer Builder의 책임을 분리한 경험
 - 답변과 근거 데이터를 구분한 API Response 설계 경험
-- pandas 기반 제조 데이터 Filtering과 Aggregation 경험
+- pandas 기반 제조 데이터 필터링과 집계 경험
 - 동일 Service 기능을 FastAPI와 MCP Tool Interface로 노출한 경험
 - Agent API와 PyTorch Model Endpoint의 차이를 구분한 경험
 - Docker와 GitHub Actions로 실행 및 테스트 경로를 구성한 경험
@@ -447,5 +443,5 @@ manufacturing-mcp-agent/
 ## Contact
 
 - Developer: 김수진
-- GitHub: [github.com/lightleaping](https://github.com/lightleaping)
+- GitHub: https://github.com/lightleaping
 - Email: workingskyroad@gmail.com
