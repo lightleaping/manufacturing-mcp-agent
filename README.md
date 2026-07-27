@@ -278,6 +278,8 @@ GitHub Actions는 Python 3.11 환경에서 Dependency 설치, Sample Data 생성
 
 ## API
 
+### 2개 기능 Endpoint + 1개 서비스 안내 Endpoint
+
 | Method | Endpoint | Role |
 |---|---|---|
 | `GET` | `/` | Service 상태와 Endpoint 안내 |
