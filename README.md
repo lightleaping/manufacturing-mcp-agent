@@ -1,4 +1,5 @@
 # 제조 품질 분석 NLP Agent
+### Manufacturing MCP Agent
 
 **Manufacturing Intent Routing, MCP Tools, Evidence, and FastAPI**
 
