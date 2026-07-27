@@ -50,7 +50,7 @@ Question
 | **범위** | 샘플 제조 데이터, 규칙 기반 Intent, Router, LangGraph, 4개 분석 Tool, FastMCP Server, FastAPI, JSONL Trace, PyTorch Model Endpoint, Docker, GitHub Actions, pytest |
 | **NLP 범위** | 자연어 질문의 목적을 4개 Intent로 분류하고 처리 경로를 결정 |
 | **기술** | Python, FastAPI, Pydantic, LangGraph, MCP FastMCP, pandas, SQLite, PyTorch, Docker, GitHub Actions |
-| **구현 결과** | 4 Intents, 4 Agent Tools, 4 MCP Tools, 3 API Endpoints, 핵심 테스트 9개 |
+| **구현 결과** | 4 Intents, 4 Agent Tools, 4 MCP Tools, 2 Core POST Endpoints + 1 Service Info Endpoint, 핵심 테스트 9개 |
 
 ---
 
