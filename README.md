@@ -63,13 +63,11 @@ Question
 | 여러 목적 표현이 섞이면 Routing이 달라질 수 있음 | 원인, 생산성, 불량, 센서 순서로 분류 우선순위 적용 | 복합 질문의 처리 규칙을 코드로 명시 |
 | Agent API와 MCP의 관계가 혼동될 수 있음 | Agent는 Python Tool 직접 호출, MCP는 동일 함수를 별도 노출 | 내부 실행과 외부 Tool Interface 책임 분리 |
 | 규칙 기반 Tool과 Model Endpoint가 한 흐름처럼 보일 수 있음 | `/agent/query`와 `/model/sensor-anomaly` 독립 구성 | 데이터 집계와 PyTorch 추론 범위 구분 |
-| 실행 환경이 달라지면 검증이 어려움 | 샘플 데이터 생성, pytest, Docker, GitHub Actions 구성 | Local, Container, CI 실행 경로 제공 |
+| 실행 결과를 반복 확인할 필요가 있음 | 샘플 데이터 생성 스크립트와 pytest 구성 | 동일한 샘플 데이터로 핵심 Agent·Tool 흐름을 다시 검증할 수 있는 구조 제공 |
 
 ---
 
 ## System Overview
-
-<img src="./docs/assets/mcp-system-overview.png" alt="제조 품질 분석 NLP Agent 시스템 구성도" width="100%">
 
 ### Responsibility Separation
 
@@ -105,7 +103,7 @@ Agent 프로젝트는 하나의 Accuracy 수치보다 **Routing, Tool 계약, Ev
 | **Tool 계약 명확성** | MCP Tool의 이름, 설명, 입력값이 구분되는가 | FastMCP 4개 Tool, `days` Argument |
 | **실행 추적** | 어떤 질문이 어떤 Tool로 처리되었는가 | `logs/agent_trace.jsonl` |
 | **책임 분리** | Agent, MCP, Model의 실제 호출 관계가 정확한가 | Agent 직접 호출, 별도 MCP Server, 독립 Model Endpoint |
-| **재현성** | Sample Data와 Test를 같은 조건에서 실행할 수 있는가 | Python 3.11 CI, Docker, GitHub Actions |
+| **재현성** | Sample Data와 Test를 같은 조건에서 실행할 수 있는가 | Sample Data 생성 스크립트, pytest 핵심 테스트 9개 |
 | **범위 설명** | 규칙 기반 분류와 원인 후보를 과장하지 않는가 | No external LLM, Candidate 표현, Model 한계 명시 |
 
 > 현재 공개 Test는 Agent Flow 4개, Tool 4개, PyTorch Service 1개입니다. FastAPI Endpoint 통합 Test와 MCP Protocol 통합 Test가 구현된 것으로 표현하지 않습니다.
@@ -143,8 +141,6 @@ Agent 프로젝트는 하나의 Accuracy 수치보다 **Routing, Tool 계약, Ev
 ---
 
 ## Agent Workflow
-
-<img src="./docs/assets/mcp-agent-workflow.png" alt="제조 품질 분석 NLP Agent Workflow" width="100%">
 
 | 단계 | 실제 처리 |
 |---|---|
@@ -259,7 +255,7 @@ temperature, vibration, pressure
 </details>
 
 <details>
-<summary><b>05 | Validation and CI</b></summary>
+<summary><b>05 | Validation</b></summary>
 
 <br>
 
@@ -268,8 +264,6 @@ tests/test_agent_flow.py     4 cases
 tests/test_tools.py          4 cases
 tests/test_torch_model.py    1 case
 ```
-
-GitHub Actions는 Python 3.11 환경에서 Dependency 설치, Sample Data 생성, pytest 실행을 수행합니다.
 
 </details>
 
@@ -359,19 +353,12 @@ Tests:
 python -m pytest .\tests -q
 ```
 
-Docker:
-
-```powershell
-docker compose up --build
-```
-
 ---
 
 ## Project Structure
 
 ```text
 manufacturing-mcp-agent/
-├── .github/workflows/ci.yml
 ├── app/
 │   ├── agent/
 │   ├── db/
@@ -381,11 +368,7 @@ manufacturing-mcp-agent/
 │   ├── config.py
 │   └── main.py
 ├── data/
-├── docs/assets/
-├── langflow/
 ├── tests/
-├── Dockerfile
-├── docker-compose.yml
 ├── pytest.ini
 ├── requirements.txt
 ├── scripts_generate_sample_data.py
@@ -407,7 +390,6 @@ manufacturing-mcp-agent/
 - JSONL Agent Trace
 - FastAPI Agent Endpoint
 - 독립 PyTorch Model Endpoint
-- Docker와 GitHub Actions
 
 ### Limitations
 
@@ -442,7 +424,7 @@ manufacturing-mcp-agent/
 - Answer와 Evidence를 구분한 API Response 설계 경험
 - 같은 Python Tool을 Agent와 MCP Interface에서 재사용한 경험
 - Agent API와 Model Endpoint의 실제 범위를 구분한 경험
-- JSONL Trace, Docker, GitHub Actions로 실행과 검증 경로를 구성한 경험
+- JSONL Trace와 pytest로 실행 과정과 핵심 기능을 확인할 수 있도록 구성한 경험
 
 ---
 
