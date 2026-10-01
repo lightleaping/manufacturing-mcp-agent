@@ -1,4 +1,4 @@
-# 제조 품질 분석 NLP Agent
+# 제조 데이터 분석 Agent
 ### Manufacturing MCP Agent
 
 **Manufacturing Intent Routing, MCP Tools, Evidence, and FastAPI**
@@ -10,7 +10,6 @@
   <img src="https://img.shields.io/badge/FastAPI-Agent%20API-21AFC4?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
   <img src="https://img.shields.io/badge/LangGraph-Workflow-151F32?style=flat-square" alt="LangGraph">
   <img src="https://img.shields.io/badge/FastMCP-4%20Tools-3561D8?style=flat-square" alt="FastMCP">
-  <img src="https://img.shields.io/badge/Docker-GitHub%20Actions-5F6675?style=flat-square&logo=docker&logoColor=white" alt="Docker and GitHub Actions">
 </p>
 
 ---
@@ -48,9 +47,9 @@ Question
 | **기간** | 2026.04–05 |
 | **형태** | 개인 프로젝트 |
 | **목표** | 제조 자연어 질문을 분석 기능으로 연결하고, 답변과 근거 데이터를 함께 반환 |
-| **범위** | 샘플 제조 데이터, 규칙 기반 Intent, Router, LangGraph, 4개 분석 Tool, FastMCP Server, FastAPI, JSONL Trace, PyTorch Model Endpoint, Docker, GitHub Actions, pytest |
+| **범위** | 샘플 제조 데이터, 규칙 기반 Intent, Router, LangGraph, 4개 분석 Tool, FastMCP Server, FastAPI, JSONL Trace, PyTorch Model Endpoint, pytest |
 | **NLP 범위** | 자연어 질문의 목적을 4개 Intent로 분류하고 처리 경로를 결정 |
-| **기술** | Python, FastAPI, Pydantic, LangGraph, MCP FastMCP, pandas, SQLite, PyTorch, Docker, GitHub Actions |
+| **기술** | Python, FastAPI, Pydantic, LangGraph, FastMCP, pandas, SQLite, PyTorch, pytest |
 | **구현 결과** | 4 Intents, 4 Agent Tools, 4 MCP Tools, 2 Core POST Endpoints + 1 Service Info Endpoint, 핵심 테스트 9개 |
 
 ---
